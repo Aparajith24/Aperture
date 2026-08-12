@@ -1,0 +1,58 @@
+{
+  "name": "tiny-store",
+  "version": "0.1.0",
+  "description": "A dependency-free, sub-1kb React state library with automatic fine-grained re-rendering.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "size": "npm run build && size-limit"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.0.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "jsdom": "^25.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "size-limit": "^11.1.6",
+    "@size-limit/preset-small-lib": "^11.1.6",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  },
+  "size-limit": [
+    {
+      "path": "dist/index.js",
+      "limit": "1 kB"
+    }
+  ],
+  "keywords": [
+    "react",
+    "state",
+    "state-management",
+    "hooks",
+    "proxy"
+  ],
+  "license": "MIT"
+}
