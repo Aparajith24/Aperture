@@ -1,7 +1,7 @@
 {
-  "name": "tiny-store",
+  "name": "aperture",
   "version": "0.1.0",
-  "description": "A dependency-free, sub-1kb React state library with automatic fine-grained re-rendering.",
+  "description": "A dependency-free React state library with automatic fine-grained re-rendering via Proxy-based read tracking.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
