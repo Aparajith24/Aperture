@@ -8,6 +8,7 @@ Zero-selector fine-grained state for React, sub-1kb
 
 <p align="center">
 
+[![npm version](https://img.shields.io/npm/v/aperture-store.svg)](https://www.npmjs.com/package/aperture-store)
 ![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)
 ![React](https://img.shields.io/badge/react-%3E%3D16.8-61DAFB)
 ![Vitest](https://img.shields.io/badge/tested%20with-vitest-6E9F18)
@@ -157,19 +158,16 @@ Size:       388 B with all dependencies, minified and brotlied
 
 ## Install
 
-Not published to npm, install from source:
-
 ```bash
-git clone <this-repo>
-cd aperture
-npm install
-npm run build
+npm install aperture-store
 ```
+
+Requires React >=16.8 as a peer dependency (not bundled).
 
 ## Quick start
 
 ```js
-import { createStore } from 'aperture'
+import { createStore } from 'aperture-store'
 
 const useStore = createStore({ theme: 'light', unreadCount: 0 })
 
