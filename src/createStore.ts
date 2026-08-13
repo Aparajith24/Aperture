@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from 'react'
+import { useRef, useSyncExternalStore } from 'react'
 
 type Listener<T> = (state: T) => void
 type SetStateAction<T> = Partial<T> | ((state: T) => Partial<T>)
@@ -23,28 +23,38 @@ export function createStore<T extends object>(initialState: T) {
   }
 
   function useStore(): T {
-    const [, forceRender] = useReducer((c: number) => c + 1, 0)
-    const tracked = useRef<Map<keyof T, T[keyof T]>>(new Map()).current
-    tracked.clear()
+    const trackedRef = useRef<Map<keyof T, T[keyof T]>>(new Map())
+    const proxyRef = useRef<T | null>(null)
 
-    useEffect(() => {
-      return subscribe((newState) => {
-        for (const [key, lastValue] of tracked) {
-          if (!Object.is(newState[key], lastValue)) {
-            forceRender()
-            return
-          }
-        }
+    const makeProxy = (): T => {
+      const nextTracked = new Map<keyof T, T[keyof T]>()
+      const proxy = new Proxy({} as T, {
+        get(_target, prop, receiver) {
+          const value = Reflect.get(state, prop, receiver)
+          nextTracked.set(prop as keyof T, value as T[keyof T])
+          return value
+        },
       })
-    }, [])
+      trackedRef.current = nextTracked
+      proxyRef.current = proxy
+      return proxy
+    }
 
-    return new Proxy(state, {
-      get(target, prop, receiver) {
-        const value = Reflect.get(target, prop, receiver)
-        tracked.set(prop as keyof T, value as T[keyof T])
-        return value
-      },
-    })
+    const getSnapshot = (): T => {
+      if (proxyRef.current === null) return makeProxy()
+
+      for (const [key, lastValue] of trackedRef.current) {
+        if (!Object.is(state[key], lastValue)) {
+          return makeProxy()
+        }
+      }
+
+      return proxyRef.current
+    }
+
+    const subscribeForReact = (onStoreChange: () => void) => subscribe(() => onStoreChange())
+
+    return useSyncExternalStore(subscribeForReact, getSnapshot, getSnapshot)
   }
 
   return Object.assign(useStore, { getState, setState, subscribe })
