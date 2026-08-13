@@ -12,7 +12,7 @@ Zero-selector fine-grained state for React, sub-1kb
 ![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)
 ![React](https://img.shields.io/badge/react-%3E%3D16.8-61DAFB)
 ![Vitest](https://img.shields.io/badge/tested%20with-vitest-6E9F18)
-![Bundle size](https://img.shields.io/badge/bundle-388B%20brotli-brightgreen)
+![Bundle size](https://img.shields.io/badge/bundle-421B%20brotli-brightgreen)
 ![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![Status](https://img.shields.io/badge/status-learning%20project-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -35,11 +35,15 @@ function ThemeLabel() {
 ## What it is
 
 A store implemented as a plain pub-sub object (`getState`/`setState`/`subscribe`), exposed to
-React through a hook. The hook hands the component a `Proxy` wrapping the current state instead
-of the raw object. Reading a property off that Proxy, e.g. `const { theme } = useStore()`,
-silently records "this component reads `theme`" via the Proxy's `get` trap. On the next
-`setState`, the store checks only the keys each individual component actually read last render,
-and only forces a re-render if one of those specific values changed.
+React through a hook built on `useSyncExternalStore`. The hook hands the component a `Proxy`
+standing in for the current state instead of the raw object. Reading a property off that Proxy,
+e.g. `const { theme } = useStore()`, silently records "this component reads `theme`" via the
+Proxy's `get` trap. On the next `setState`, React asks the hook's `getSnapshot` whether anything
+changed: it checks only the keys each individual component actually read last render, and only
+returns a new value (triggering a re-render) if one of those specific values changed. Using
+`useSyncExternalStore` rather than a hand-rolled `useReducer`/`useEffect` subscription means this
+re-render decision is synced with React's own render lifecycle, correct under concurrent
+rendering rather than just hoping a manual subscription happens to work.
 
 ## What it solves
 
@@ -138,14 +142,15 @@ against real React components (React Testing Library), not eyeballed from a demo
 | `a component reading multiple keys re-renders when any of them changes` | tracking isn't limited to one key per component |
 | `setting a tracked key to the same value does not trigger a re-render` | `Object.is` comparison bails out on no-op updates, not just unrelated ones |
 | `unmounting a component removes its listener from the store` | no dangling subscriptions / memory leak after unmount |
+| `StrictMode double-invoke does not break tracking or leak subscribers` | React 18 StrictMode's synthetic mount/unmount/remount cycle doesn't change the outcome or leave a dangling subscription |
 | 8 additional tests in `createStore.test.ts` | core store mechanics: `setState` merge/updater-function forms, immutability, `subscribe`/unsubscribe, multiple independent listeners, rapid consecutive updates all applying in order |
 
 ```
  ✓ test/createStore.test.ts (8 tests)
- ✓ test/rerender.test.tsx (4 tests)
+ ✓ test/rerender.test.tsx (5 tests)
 
  Test Files  2 passed (2)
-      Tests  12 passed (12)
+      Tests  13 passed (13)
 ```
 
 Bundle size is checked the same way: measured, not asserted.
@@ -204,10 +209,10 @@ useStore.setState({ theme: 'dark' }) // NotificationBadge does not re-render
   component's render body. Reading the store's return value inside a `useEffect`, an event
   handler, or storing it in a variable for later use happens *after* the tracking window for that
   render has already closed. See [Known limitations](#known-limitations).
-- **Not yet verified under React concurrent rendering.** The subscribe/force-render mechanism is
-  hand-rolled (`useReducer` + `useEffect`), not built on `useSyncExternalStore`. It hasn't been
-  tested for tearing under concurrent features. Use it for ordinary UI state, not
-  correctness-critical app state, until this is addressed.
+- **Not a replacement for testing your own app's re-render behavior.** The re-render decision is
+  built on `useSyncExternalStore` and covered by a StrictMode double-invoke test, but that verifies
+  the store's own mechanism, not every possible way you might compose it with your app's other
+  state.
 
 ## Known limitations
 
@@ -235,12 +240,14 @@ This is a known v1 tradeoff of the design, not a bug slated for a fix this cycle
 
 Aperture was built to actually *understand*, not just use, the mechanisms real state libraries are
 built on: pub-sub, why naive shared state over-renders, why selector-based libraries exist and
-what they cost, JS `Proxy` traps, and (as an explored stretch goal) why `useSyncExternalStore`
-exists and what "tearing" under concurrent rendering means. The implementation was deliberately
-built up in stages: a naive re-render-everything store, then manual selectors, then Proxy
-auto-tracking replacing the selectors, so each stage's problem could be felt in a real test before
-the next stage fixed it, rather than jumping straight to the "clever" version. The
-[Known limitations](#known-limitations) section above is left honest and unresolved on purpose: a
+what they cost, JS `Proxy` traps, and why `useSyncExternalStore` exists and what "tearing" under
+concurrent rendering means. The implementation was deliberately built up in stages: a naive
+re-render-everything store, then manual selectors, then Proxy auto-tracking replacing the
+selectors, then swapping the hand-rolled subscription for `useSyncExternalStore` so the re-render
+decision is actually synced with React's own render lifecycle, so each stage's problem could be
+felt in a real test before the next stage fixed it, rather than jumping straight to the "clever"
+version. The [Known limitations](#known-limitations) section above is left honest and unresolved
+on purpose: a
 working v1 that's upfront about its edges is worth more than a v2 that hides them.
 
 ## License
