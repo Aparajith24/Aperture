@@ -1,6 +1,6 @@
 {
   "name": "aperture-store",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A dependency-free React state library with automatic fine-grained re-rendering via Proxy-based read tracking.",
   "type": "module",
   "main": "./dist/index.cjs",
