@@ -205,10 +205,10 @@ useStore.setState({ theme: 'dark' }) // NotificationBadge does not re-render
 - **Not deep-tracking.** State is flat by design. Nested object updates work the same way they do
   in any immutable-update store (spread a new nested object in), but mutating a nested object in
   place won't be detected.
-- **Not safe to read outside of render.** Tracking only sees property reads that happen inside a
-  component's render body. Reading the store's return value inside a `useEffect`, an event
-  handler, or storing it in a variable for later use happens *after* the tracking window for that
-  render has already closed. See [Known limitations](#known-limitations).
+- **Reads outside of render don't drive re-renders.** Tracking only registers property reads that
+  happen inside a component's render body. Reading the store's return value inside a `useEffect`
+  or an event handler still gets the live, current value — it's just not tracked, so it can't be
+  the reason that component re-renders. See [Known limitations](#known-limitations).
 - **Not a replacement for testing your own app's re-render behavior.** The re-render decision is
   built on `useSyncExternalStore` and covered by a StrictMode double-invoke test, but that verifies
   the store's own mechanism, not every possible way you might compose it with your app's other
@@ -226,13 +226,28 @@ function NotificationBadge() {
   const store = useStore()
 
   useEffect(() => {
-    console.log(store.unreadCount) // reads the real value fine, but too late to be tracked
+    console.log(store.unreadCount) // reads the real, current value fine - it's just not tracked
   }, [])
 
   const { theme } = store // tracked correctly - this read is inside the render body
   return <p>{theme}</p>
 }
 ```
+
+This isn't staleness - `store.unreadCount` above is always the live value, because the Proxy reads
+straight from the store's current state on every access. It's purely about the re-render decision:
+a read that happens outside render can't be the reason a component re-renders, because nothing
+about what it *rendered* depended on it.
+
+That maps to two cases, and both already have a direct answer without reaching for a selector API:
+
+- **You need the current value inside a handler or effect, and don't need a re-render for it:**
+  use `useStore.getState()`. It returns the live state directly, no Proxy, no tracking, always
+  correct.
+- **You want the component to re-render when a value changes:** read that value in the render
+  body, the same way you'd read anything else this hook returns, even if you only use it inside an
+  effect and not in the JSX. That's not a workaround, it's just the API: "tracked" means "read
+  during render."
 
 This is a known v1 tradeoff of the design, not a bug slated for a fix this cycle.
 
