@@ -143,14 +143,19 @@ against real React components (React Testing Library), not eyeballed from a demo
 | `setting a tracked key to the same value does not trigger a re-render` | `Object.is` comparison bails out on no-op updates, not just unrelated ones |
 | `unmounting a component removes its listener from the store` | no dangling subscriptions / memory leak after unmount |
 | `StrictMode double-invoke does not break tracking or leak subscribers` | React 18 StrictMode's synthetic mount/unmount/remount cycle doesn't change the outcome or leave a dangling subscription |
+| `renderToString` works with no DOM/browser globals available | the Proxy-tracking mechanism doesn't secretly depend on any browser API, so it runs fine in a server (Node) environment |
+| `renderToString` reflects state set before the render call | no stale snapshot on the server render |
+| client hydration matches server-rendered markup with no mismatch warning | `hydrateRoot` against the server HTML produces identical output and never triggers React's hydration-mismatch `console.error`, confirming SSR is actually supported, not just untested |
 | 8 additional tests in `createStore.test.ts` | core store mechanics: `setState` merge/updater-function forms, immutability, `subscribe`/unsubscribe, multiple independent listeners, rapid consecutive updates all applying in order |
 
 ```
  ✓ test/createStore.test.ts (8 tests)
  ✓ test/rerender.test.tsx (5 tests)
+ ✓ test/ssr.test.tsx (2 tests)
+ ✓ test/hydration.test.tsx (1 test)
 
- Test Files  2 passed (2)
-      Tests  13 passed (13)
+ Test Files  4 passed (4)
+      Tests  16 passed (16)
 ```
 
 Bundle size is checked the same way: measured, not asserted.
